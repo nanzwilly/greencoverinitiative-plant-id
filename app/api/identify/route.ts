@@ -9,6 +9,9 @@ import { getGCILink } from "@/lib/utils";
 import { checkRateLimit, consumeScan } from "@/lib/rateLimit";
 import { createClient as createSupabaseServer } from "@/lib/supabase-server";
 
+// Allow longer execution time for Plant.id API calls with multiple images
+export const maxDuration = 30;
+
 const PLANT_ID_API_URL = "https://api.plant.id/v3/identification";
 
 export async function GET(request: NextRequest) {

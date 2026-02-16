@@ -46,14 +46,9 @@ export default function IdentifyPage() {
     }
   }
 
-  // Compress an image using canvas to stay within size limits
-  function compressImage(file: File, maxWidth = 1024, quality = 0.7): Promise<File> {
+  // Compress an image using canvas to stay within Vercel's 4.5MB body limit
+  function compressImage(file: File, maxWidth = 800, quality = 0.6): Promise<File> {
     return new Promise((resolve) => {
-      // If file is already small (<500KB), keep it as-is
-      if (file.size < 500 * 1024) {
-        resolve(file);
-        return;
-      }
       const img = new window.Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
@@ -109,6 +104,12 @@ export default function IdentifyPage() {
         method: "POST",
         body: formData,
       });
+
+      if (!res.ok && res.status === 413) {
+        setError("Images are too large. Please try with fewer or smaller photos.");
+        return;
+      }
+
       const data = await res.json();
 
       if (data.remaining !== undefined) {
