@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  /* GreenCover Initiative brand colors */
+  --color-gci-blue: #1279be;
+  --color-gci-blue-dark: #0e6199;
+  --color-gci-blue-light: #e8f4fb;
+  --color-gci-amber: #ffb302;
+  --color-gci-amber-dark: #e09e00;
+  --color-gci-amber-light: #fff8e6;
+  --color-gci-green: #11881b;
+  --color-gci-green-light: #e7f5e8;
+  --color-gci-text: #303030;
+  --color-gci-gray: #c5c5c5;
+}
