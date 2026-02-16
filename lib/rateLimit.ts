@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-const DAILY_LIMIT = 10;
+const DAILY_LIMIT = 20;
 
 interface RateLimitData {
   count: number;
