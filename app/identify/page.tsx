@@ -34,6 +34,60 @@ export default function IdentifyPage() {
       .catch(() => {});
   }, []);
 
+  // Clear previous results when files change
+  function handleFilesChange(newFiles: File[]) {
+    setFiles(newFiles);
+    // Clear old results and errors when user changes images
+    if (results || error) {
+      setResults(null);
+      setHealthDiagnoses(null);
+      setIsHealthy(null);
+      setError(null);
+    }
+  }
+
+  // Compress an image using canvas to stay within size limits
+  function compressImage(file: File, maxWidth = 1024, quality = 0.7): Promise<File> {
+    return new Promise((resolve) => {
+      // If file is already small (<500KB), keep it as-is
+      if (file.size < 500 * 1024) {
+        resolve(file);
+        return;
+      }
+      const img = new window.Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name, { type: "image/jpeg" }));
+            } else {
+              resolve(file);
+            }
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+  }
+
   async function handleSubmit() {
     if (files.length === 0) return;
     setLoading(true);
@@ -43,8 +97,13 @@ export default function IdentifyPage() {
     setError(null);
 
     try {
+      // Compress images before uploading to stay within size limits
+      const compressedFiles = await Promise.all(
+        files.map((f) => compressImage(f))
+      );
+
       const formData = new FormData();
-      files.forEach((f) => formData.append("images", f));
+      compressedFiles.forEach((f) => formData.append("images", f));
 
       const res = await fetch("/api/identify", {
         method: "POST",
@@ -88,7 +147,7 @@ export default function IdentifyPage() {
         );
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Something went wrong. The images may be too large — try using fewer or smaller photos.");
     } finally {
       setLoading(false);
     }
@@ -117,7 +176,7 @@ export default function IdentifyPage() {
         </div>
       )}
 
-      <ImageUpload maxFiles={5} onFilesChange={setFiles} />
+      <ImageUpload maxFiles={5} onFilesChange={handleFilesChange} />
 
       <div className="mt-6 flex items-center gap-4">
         <Button
