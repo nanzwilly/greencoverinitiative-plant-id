@@ -205,7 +205,7 @@ export default function IdentifyPage() {
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* ── LEFT: Identification (top 3) ─── */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <h2 className="text-lg font-bold text-[#0a6b14] uppercase tracking-wide mb-4">
               Identification ({results.length} match
               {results.length !== 1 ? "es" : ""})
             </h2>
@@ -307,7 +307,7 @@ export default function IdentifyPage() {
 
           {/* ── RIGHT: Health Assessment + Where to Find ─── */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            <h2 className="text-lg font-bold text-[#0a6b14] uppercase tracking-wide mb-4">
               Health Assessment
             </h2>
 
@@ -394,7 +394,7 @@ export default function IdentifyPage() {
             )}
 
             {/* ── Where to Find This Plant (inside right column) ─── */}
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 mt-8">
+            <h2 className="text-lg font-bold text-[#0a6b14] uppercase tracking-wide mb-4 mt-8">
               Where to Find This Plant
             </h2>
 
