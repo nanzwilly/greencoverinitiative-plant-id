@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ImageUpload from "@/components/ImageUpload";
-import Button from "@/components/Button";
 import Card from "@/components/Card";
 import type { PlantMatch } from "@/types";
 
@@ -31,16 +30,26 @@ export default function IdentifyPage() {
       .catch(() => {});
   }, []);
 
-  // Clear previous results when files change
-  function handleFilesChange(newFiles: File[]) {
+  // When files change, update state and clear results
+  const handleFilesChange = useCallback((newFiles: File[]) => {
     setFiles(newFiles);
-    // Clear old results and errors when user changes images
-    if (results || error || noPlant) {
-      setResults(null);
-      setError(null);
-      setNoPlant(false);
+    setResults(null);
+    setError(null);
+    setNoPlant(false);
+  }, []);
+
+  // Auto-submit when a file is uploaded
+  const hasTriggered = useRef(false);
+  useEffect(() => {
+    if (files.length > 0 && !loading && !hasTriggered.current) {
+      hasTriggered.current = true;
+      handleSubmit();
     }
-  }
+    if (files.length === 0) {
+      hasTriggered.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files]);
 
   // Compress an image using canvas to stay within Vercel's 4.5MB body limit
   function compressImage(file: File, maxWidth = 800, quality = 0.6): Promise<File> {
@@ -101,7 +110,7 @@ export default function IdentifyPage() {
       });
 
       if (!res.ok && res.status === 413) {
-        setError("Images are too large. Please try with fewer or smaller photos.");
+        setError("Image is too large. Please try with a smaller photo.");
         return;
       }
 
@@ -139,7 +148,7 @@ export default function IdentifyPage() {
         );
       }
     } catch {
-      setError("Something went wrong. The images may be too large — try using fewer or smaller photos.");
+      setError("Something went wrong. Try uploading a different photo.");
     } finally {
       setLoading(false);
     }
@@ -153,7 +162,7 @@ export default function IdentifyPage() {
         Identify a Plant
       </h1>
       <p className="text-gray-600 mb-4">
-        Upload 1–5 images of a plant to identify it instantly.
+        Upload a photo of a plant to identify it instantly.
       </p>
 
       {remaining !== null && (
@@ -168,22 +177,17 @@ export default function IdentifyPage() {
         </div>
       )}
 
-      <ImageUpload maxFiles={5} onFilesChange={handleFilesChange} />
+      <ImageUpload maxFiles={1} onFilesChange={handleFilesChange} />
 
-      <div className="mt-6 flex items-center gap-4">
-        <Button
-          onClick={handleSubmit}
-          disabled={files.length === 0 || loading}
-          type="button"
-        >
-          {loading ? "Identifying…" : "Identify Plant"}
-        </Button>
-        {loading && (
-          <span className="text-sm text-gray-500">
-            Analyzing with AI...
-          </span>
-        )}
-      </div>
+      {loading && (
+        <div className="mt-6 flex items-center gap-3 text-sm text-gray-500">
+          <svg className="animate-spin h-5 w-5 text-[#0a6b14]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Identifying your plant...
+        </div>
+      )}
 
       {error && (
         <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
