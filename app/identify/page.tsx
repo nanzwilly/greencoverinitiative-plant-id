@@ -4,17 +4,14 @@ import { useState, useEffect } from "react";
 import ImageUpload from "@/components/ImageUpload";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
-import type { PlantMatch, HealthDiagnosis } from "@/types";
+import type { PlantMatch } from "@/types";
 
 export default function IdentifyPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<PlantMatch[] | null>(null);
-  const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
-  const [healthDiagnoses, setHealthDiagnoses] = useState<
-    HealthDiagnosis[] | null
-  >(null);
   const [error, setError] = useState<string | null>(null);
+  const [noPlant, setNoPlant] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState<number>(10);
   const [userLocation, setUserLocation] = useState<{
@@ -38,11 +35,10 @@ export default function IdentifyPage() {
   function handleFilesChange(newFiles: File[]) {
     setFiles(newFiles);
     // Clear old results and errors when user changes images
-    if (results || error) {
+    if (results || error || noPlant) {
       setResults(null);
-      setHealthDiagnoses(null);
-      setIsHealthy(null);
       setError(null);
+      setNoPlant(false);
     }
   }
 
@@ -87,9 +83,8 @@ export default function IdentifyPage() {
     if (files.length === 0) return;
     setLoading(true);
     setResults(null);
-    setHealthDiagnoses(null);
-    setIsHealthy(null);
     setError(null);
+    setNoPlant(false);
 
     try {
       // Compress images before uploading to stay within size limits
@@ -122,15 +117,11 @@ export default function IdentifyPage() {
       }
 
       if (data.matches.length === 0) {
-        setError(
-          "No plant detected in the image. Please try a clearer photo of the plant."
-        );
+        setNoPlant(true);
         return;
       }
 
       setResults(data.matches);
-      setIsHealthy(data.is_healthy);
-      setHealthDiagnoses(data.health_diagnoses || []);
 
       // Request location for nursery finder
       if (navigator.geolocation) {
@@ -162,7 +153,7 @@ export default function IdentifyPage() {
         Identify a Plant
       </h1>
       <p className="text-gray-600 mb-4">
-        Upload 1–5 images of a plant to identify it and check its health.
+        Upload 1–5 images of a plant to identify it instantly.
       </p>
 
       {remaining !== null && (
@@ -189,7 +180,7 @@ export default function IdentifyPage() {
         </Button>
         {loading && (
           <span className="text-sm text-gray-500">
-            Analyzing with AI — identification + health check...
+            Analyzing with AI...
           </span>
         )}
       </div>
@@ -197,6 +188,20 @@ export default function IdentifyPage() {
       {error && (
         <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {noPlant && (
+        <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-5 flex items-center gap-3">
+          <span className="text-3xl">🌱</span>
+          <div>
+            <p className="font-semibold text-amber-800">
+              Sorry, we didn&apos;t find any plant in this picture.
+            </p>
+            <p className="text-sm text-amber-600 mt-0.5">
+              Try uploading a clearer photo with the plant in focus.
+            </p>
+          </div>
         </div>
       )}
 
@@ -305,96 +310,9 @@ export default function IdentifyPage() {
             </div>
           </section>
 
-          {/* ── RIGHT: Health Assessment + Where to Find ─── */}
+          {/* ── RIGHT: Where to Find This Plant ─── */}
           <section>
             <h2 className="text-lg font-bold text-[#0a6b14] uppercase tracking-wide mb-4">
-              Health Assessment
-            </h2>
-
-            {/* Health status banner */}
-            {isHealthy !== null && (
-              <div
-                className={`rounded-lg p-4 mb-4 flex items-center gap-3 ${
-                  isHealthy
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
-                }`}
-              >
-                <span className="text-2xl">
-                  {isHealthy ? "✅" : "⚠️"}
-                </span>
-                <div>
-                  <p
-                    className={`font-semibold ${isHealthy ? "text-green-700" : "text-red-700"}`}
-                  >
-                    {isHealthy
-                      ? "Plant looks healthy!"
-                      : "Potential issues detected"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {isHealthy
-                      ? "No diseases or problems found."
-                      : "See details below for diagnosis and treatment."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Disease cards */}
-            {healthDiagnoses && healthDiagnoses.length > 0 ? (
-              <div className="space-y-4">
-                {healthDiagnoses.map((d, i) => (
-                  <Card key={i}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-bold text-red-700">
-                          {d.condition}
-                        </h3>
-                        {d.cause && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Cause: {d.cause}
-                          </p>
-                        )}
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-3">
-                          {d.description}
-                        </p>
-                        <div className="mt-3 bg-green-50 rounded-md p-3">
-                          <p className="text-xs font-semibold text-green-800 mb-1">
-                            💊 Treatment
-                          </p>
-                          <p className="text-sm text-green-700 line-clamp-4">
-                            {d.treatment}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                            d.confidence >= 0.5
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {Math.round(d.confidence * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="text-center py-8">
-                <div className="text-4xl mb-2">🌿</div>
-                <p className="text-gray-500">
-                  {isHealthy === true
-                    ? "No issues found. Your plant appears to be in good condition."
-                    : "No significant health issues detected. The plant appears to be mostly healthy."}
-                </p>
-              </Card>
-            )}
-
-            {/* ── Where to Find This Plant (inside right column) ─── */}
-            <h2 className="text-lg font-bold text-[#0a6b14] uppercase tracking-wide mb-4 mt-8">
               Where to Find This Plant
             </h2>
 
@@ -454,32 +372,14 @@ export default function IdentifyPage() {
                 <p className="text-xs text-gray-500 mb-3">
                   Search for <strong>{results[0].name}</strong> on popular stores:
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(results[0].name + " plant")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-200 transition"
-                  >
-                    Google Shopping
-                  </a>
-                  <a
-                    href={`https://www.amazon.com/s?k=${encodeURIComponent(results[0].name + " plant")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-200 transition"
-                  >
-                    Amazon
-                  </a>
-                  <a
-                    href={`https://www.etsy.com/search?q=${encodeURIComponent(results[0].name + " plant")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-700 hover:bg-gray-200 transition"
-                  >
-                    Etsy
-                  </a>
-                </div>
+                <a
+                  href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(results[0].name + " plant")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#0a6b14] text-white rounded-lg text-sm font-semibold hover:bg-[#085a10] transition"
+                >
+                  🛒 Shop for {results[0].name} on Google
+                </a>
               </Card>
             )}
           </section>

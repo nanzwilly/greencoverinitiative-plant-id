@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import type {
   IdentifyResponse,
   PlantMatch,
-  HealthDiagnosis,
 } from "@/types";
 import { getGCILink } from "@/lib/utils";
 import { checkRateLimit, consumeScan } from "@/lib/rateLimit";
@@ -12,7 +11,6 @@ import { createClient as createSupabaseServer } from "@/lib/supabase-server";
 export const maxDuration = 30;
 
 const PLANTNET_API_URL = "https://my-api.plantnet.org/v2/identify/all";
-const PLANT_ID_API_URL = "https://api.plant.id/v3/identification";
 
 const DEFAULT_CARE = {
   light: "Bright indirect light",
@@ -34,7 +32,6 @@ export async function POST(
   NextResponse<IdentifyResponse | { success: false; error: string }>
 > {
   const plantnetKey = process.env.PLANTNET_API_KEY;
-  const plantIdKey = process.env.PLANT_ID_API_KEY;
 
   if (!plantnetKey) {
     return NextResponse.json(
@@ -73,7 +70,7 @@ export async function POST(
     }
 
     // ======================================================
-    // STEP 1: Pl@ntNet for plant IDENTIFICATION (free, 500/day)
+    // Pl@ntNet for plant IDENTIFICATION (free, 500/day)
     // ======================================================
     const plantnetForm = new FormData();
     for (const file of imageFiles) {
@@ -163,115 +160,6 @@ export async function POST(
       }
     );
 
-    // ======================================================
-    // STEP 2: Plant.id for HEALTH assessment only (saves credits)
-    // ======================================================
-    let isHealthy: boolean | null = null;
-    let healthDiagnoses: HealthDiagnosis[] = [];
-
-    if (plantIdKey) {
-      try {
-        // Convert images to base64 for Plant.id
-        const base64Images: string[] = [];
-        for (const file of imageFiles) {
-          const arrayBuffer = await file.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          base64Images.push(buffer.toString("base64"));
-        }
-
-        const healthBody = {
-          images: base64Images,
-          health: "only",  // health assessment only — no identification, saves 1 credit
-        };
-
-        const healthParams = new URLSearchParams({
-          disease_details: "local_name,description,treatment,cause",
-        });
-
-        const healthResponse = await fetch(
-          `${PLANT_ID_API_URL}?${healthParams.toString()}`,
-          {
-            method: "POST",
-            headers: {
-              "Api-Key": plantIdKey,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(healthBody),
-          }
-        );
-
-        if (healthResponse.ok) {
-          const healthData = await healthResponse.json();
-
-          isHealthy =
-            healthData.result?.disease?.is_healthy?.binary ?? null;
-
-          const diseaseSuggestions =
-            healthData.result?.disease?.suggestions || [];
-
-          healthDiagnoses = diseaseSuggestions
-            .filter((d: { probability: number }) => d.probability > 0.01)
-            .slice(0, 5)
-            .map(
-              (d: {
-                name: string;
-                probability: number;
-                details?: {
-                  local_name?: string;
-                  description?: string;
-                  treatment?: {
-                    biological?: string[];
-                    chemical?: string[];
-                    prevention?: string[];
-                  };
-                  cause?: string;
-                };
-              }) => {
-                const treatmentParts: string[] = [];
-                if (d.details?.treatment?.biological?.length) {
-                  treatmentParts.push(
-                    d.details.treatment.biological.join(". ")
-                  );
-                }
-                if (d.details?.treatment?.chemical?.length) {
-                  treatmentParts.push(
-                    d.details.treatment.chemical.join(". ")
-                  );
-                }
-                if (d.details?.treatment?.prevention?.length) {
-                  treatmentParts.push(
-                    "Prevention: " +
-                      d.details.treatment.prevention.join(". ")
-                  );
-                }
-
-                return {
-                  condition: d.details?.local_name || d.name,
-                  confidence: d.probability,
-                  description:
-                    d.details?.description ||
-                    `Detected condition: ${d.name}.`,
-                  treatment:
-                    treatmentParts.join(" ") ||
-                    "Consult a local gardening expert for treatment options.",
-                  cause: d.details?.cause,
-                };
-              }
-            );
-        } else {
-          console.error(
-            "Plant.id health API error:",
-            healthResponse.status,
-            await healthResponse.text()
-          );
-          // Health check failed but identification succeeded — still return results
-        }
-      } catch (healthError) {
-        console.error("Health assessment error:", healthError);
-        // Don't fail the whole request if health check fails
-      }
-    }
-
     // Consume one scan and set cookie
     const { cookieValue, remaining } = consumeScan(request);
 
@@ -291,8 +179,8 @@ export async function POST(
           confidence: topMatch.confidence,
           result_json: {
             matches,
-            is_healthy: isHealthy,
-            health_diagnoses: healthDiagnoses,
+            is_healthy: null,
+            health_diagnoses: [],
           },
         });
       }
@@ -303,8 +191,8 @@ export async function POST(
     const response = NextResponse.json({
       success: true,
       matches,
-      is_healthy: isHealthy,
-      health_diagnoses: healthDiagnoses,
+      is_healthy: null,
+      health_diagnoses: [],
       remaining,
     });
 
