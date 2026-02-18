@@ -4,7 +4,6 @@ import type {
   PlantMatch,
 } from "@/types";
 import { getGCILink } from "@/lib/utils";
-import { checkRateLimit, consumeScan } from "@/lib/rateLimit";
 import { createClient as createSupabaseServer } from "@/lib/supabase-server";
 
 // Allow longer execution time for API calls
@@ -17,14 +16,6 @@ const DEFAULT_CARE = {
   water: "Water when top soil is dry",
   soil: "Well-drained potting mix",
 };
-
-export async function GET(request: NextRequest) {
-  const rateCheck = checkRateLimit(request);
-  return NextResponse.json({
-    remaining: rateCheck.remaining,
-    limit: rateCheck.limit,
-  });
-}
 
 export async function POST(
   request: NextRequest
@@ -41,20 +32,6 @@ export async function POST(
           "Pl@ntNet API key is not configured. Add PLANTNET_API_KEY to your .env.local file.",
       },
       { status: 500 }
-    );
-  }
-
-  // --- Rate limit check ---
-  const rateCheck = checkRateLimit(request);
-  if (!rateCheck.allowed) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: `Daily limit reached (${rateCheck.limit} scans per day). Please try again tomorrow.`,
-        remaining: 0,
-        limit: rateCheck.limit,
-      },
-      { status: 429 }
     );
   }
 
@@ -160,9 +137,6 @@ export async function POST(
       }
     );
 
-    // Consume one scan and set cookie
-    const { cookieValue, remaining } = consumeScan(request);
-
     // Save to history if user is logged in (non-blocking)
     try {
       const supabase = await createSupabaseServer();
@@ -188,22 +162,12 @@ export async function POST(
       console.error("Failed to save to history:", historyError);
     }
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       matches,
       is_healthy: null,
       health_diagnoses: [],
-      remaining,
     });
-
-    response.cookies.set("plant_id_usage", cookieValue, {
-      httpOnly: false,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
-
-    return response;
   } catch (error) {
     console.error("Identification error:", error);
     return NextResponse.json(

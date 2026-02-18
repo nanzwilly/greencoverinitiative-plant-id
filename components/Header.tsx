@@ -46,16 +46,10 @@ export default function Header() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link
-            href="/identify"
+            href="/"
             className="text-[#303030] hover:text-[#1279be] transition"
           >
             Identify
-          </Link>
-          <Link
-            href="/health"
-            className="text-[#303030] hover:text-[#1279be] transition"
-          >
-            Plant Health
           </Link>
           <Link
             href="/history"
@@ -124,18 +118,11 @@ export default function Header() {
       {menuOpen && (
         <nav className="md:hidden border-t border-gray-200 px-4 py-3 flex flex-col gap-3 text-sm font-medium bg-white">
           <Link
-            href="/identify"
+            href="/"
             className="text-[#303030] hover:text-[#1279be]"
             onClick={() => setMenuOpen(false)}
           >
             Identify
-          </Link>
-          <Link
-            href="/health"
-            className="text-[#303030] hover:text-[#1279be]"
-            onClick={() => setMenuOpen(false)}
-          >
-            Plant Health
           </Link>
           <Link
             href="/history"

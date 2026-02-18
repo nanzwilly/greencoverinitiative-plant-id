@@ -53,44 +53,53 @@ export default function ImageUpload({
 
   return (
     <div className="space-y-4">
-      <div
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
-          dragOver
-            ? "border-green-500 bg-green-50"
-            : "border-gray-300 hover:border-green-400 hover:bg-green-50/50"
-        } ${files.length >= maxFiles ? "opacity-50 cursor-not-allowed" : ""}`}
-        onClick={() => {
-          if (files.length < maxFiles) inputRef.current?.click();
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          if (files.length < maxFiles) handleFiles(e.dataTransfer.files);
-        }}
-      >
-        <div className="text-4xl mb-2">📷</div>
-        <p className="text-gray-600 font-medium">
-          {files.length >= maxFiles
-            ? `Maximum ${maxFiles} images reached`
-            : "Drag & drop images here, or click to select"}
-        </p>
-        <p className="text-gray-400 text-sm mt-1">
-          {files.length} / {maxFiles} images (JPEG, PNG, WebP)
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-      </div>
+      {/* Hide the upload box when maxFiles is 1 and an image is already uploaded */}
+      {!(maxFiles === 1 && files.length >= maxFiles) && (
+        <div
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${
+            dragOver
+              ? "border-green-500 bg-green-50"
+              : "border-gray-300 hover:border-green-400 hover:bg-green-50/50"
+          } ${files.length >= maxFiles ? "opacity-50 cursor-not-allowed" : ""}`}
+          onClick={() => {
+            if (files.length < maxFiles) inputRef.current?.click();
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            if (files.length < maxFiles) handleFiles(e.dataTransfer.files);
+          }}
+        >
+          <div className="text-4xl mb-2">📷</div>
+          <p className="text-gray-600 font-medium">
+            {maxFiles === 1
+              ? "Drag & drop an image here, or click to select"
+              : files.length >= maxFiles
+                ? `Maximum ${maxFiles} images reached`
+                : "Drag & drop images here, or click to select"}
+          </p>
+          {maxFiles > 1 ? (
+            <p className="text-gray-400 text-sm mt-1">
+              {files.length} / {maxFiles} images (JPEG, PNG, WebP)
+            </p>
+          ) : (
+            <p className="text-gray-400 text-sm mt-1">JPEG, PNG, WebP</p>
+          )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+        </div>
+      )}
 
       {previews.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
