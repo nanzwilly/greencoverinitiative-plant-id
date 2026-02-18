@@ -146,11 +146,35 @@ export async function POST(
 
       if (user && matches.length > 0) {
         const topMatch = matches[0];
+
+        // Upload user's photo to Supabase Storage
+        let imageUrl: string | null = null;
+        try {
+          const imageFile = imageFiles[0];
+          const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+          const filePath = `${user.id}/${Date.now()}.jpg`;
+          const { data: uploadData } = await supabase.storage
+            .from("plant-images")
+            .upload(filePath, imageBuffer, {
+              contentType: "image/jpeg",
+              upsert: false,
+            });
+          if (uploadData?.path) {
+            const { data: urlData } = supabase.storage
+              .from("plant-images")
+              .getPublicUrl(uploadData.path);
+            imageUrl = urlData.publicUrl;
+          }
+        } catch (uploadError) {
+          console.error("Failed to upload image:", uploadError);
+        }
+
         await supabase.from("identification_history").insert({
           user_id: user.id,
           plant_name: topMatch.name,
           scientific_name: topMatch.scientific_name,
           confidence: topMatch.confidence,
+          image_thumbnail: imageUrl,
           result_json: {
             matches,
             is_healthy: null,

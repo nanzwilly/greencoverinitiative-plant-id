@@ -205,7 +205,7 @@ export default function HomePage() {
             <h1 className="text-3xl sm:text-5xl font-bold text-[#303030] mb-4">
               Welcome to Green Cover Initiative
             </h1>
-            <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-[#0a6b14] mb-8 max-w-2xl mx-auto">
               Upload a photo to identify any plant instantly.
             </p>
 
