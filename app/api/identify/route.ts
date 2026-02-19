@@ -46,12 +46,18 @@ export async function POST(
       );
     }
 
+    // Capture image buffer BEFORE FormData consumes the file stream
+    // (File streams can only be read once — after fetch() they're exhausted)
+    const imageBufferForStorage = Buffer.from(
+      await imageFiles[0].arrayBuffer()
+    );
+
     // ======================================================
     // Pl@ntNet for plant IDENTIFICATION (free, 500/day)
     // ======================================================
     const plantnetForm = new FormData();
     for (const file of imageFiles) {
-      plantnetForm.append("images", file);
+      plantnetForm.append("images", new Blob([imageBufferForStorage], { type: file.type }));
       plantnetForm.append("organs", "auto");
     }
 
@@ -147,18 +153,19 @@ export async function POST(
       if (user && matches.length > 0) {
         const topMatch = matches[0];
 
-        // Upload user's photo to Supabase Storage
+        // Upload user's photo to Supabase Storage (using pre-captured buffer)
         let imageUrl: string | null = null;
         try {
-          const imageFile = imageFiles[0];
-          const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
           const filePath = `${user.id}/${Date.now()}.jpg`;
-          const { data: uploadData } = await supabase.storage
+          const { data: uploadData, error: uploadErr } = await supabase.storage
             .from("plant-images")
-            .upload(filePath, imageBuffer, {
+            .upload(filePath, imageBufferForStorage, {
               contentType: "image/jpeg",
               upsert: false,
             });
+          if (uploadErr) {
+            console.error("Storage upload error:", uploadErr.message);
+          }
           if (uploadData?.path) {
             const { data: urlData } = supabase.storage
               .from("plant-images")
