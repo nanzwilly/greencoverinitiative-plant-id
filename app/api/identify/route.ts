@@ -158,7 +158,7 @@ export async function POST(
         try {
           const filePath = `${user.id}/${Date.now()}.jpg`;
           const { data: uploadData, error: uploadErr } = await supabase.storage
-            .from("plant-images")
+            .from("Plant-images")
             .upload(filePath, imageBufferForStorage, {
               contentType: "image/jpeg",
               upsert: false,
@@ -168,7 +168,7 @@ export async function POST(
           }
           if (uploadData?.path) {
             const { data: urlData } = supabase.storage
-              .from("plant-images")
+              .from("Plant-images")
               .getPublicUrl(uploadData.path);
             imageUrl = urlData.publicUrl;
           }
