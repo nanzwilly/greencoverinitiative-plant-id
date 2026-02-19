@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "@/components/Header";
 import AuthProvider from "@/components/AuthProvider";
 import { createClient } from "@/lib/supabase-server";
@@ -77,6 +78,7 @@ export default async function RootLayout({
             </div>
           </footer>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
