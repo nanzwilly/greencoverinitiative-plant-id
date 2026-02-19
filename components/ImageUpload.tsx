@@ -14,7 +14,10 @@ export default function ImageUpload({
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   const updateFiles = useCallback(
     (newFiles: File[], newPreviews: string[]) => {
@@ -27,11 +30,21 @@ export default function ImageUpload({
 
   function handleFiles(incoming: FileList | null) {
     if (!incoming) return;
+    setSizeError(false);
 
-    const allowed = Array.from(incoming)
-      .filter((f) => f.type.startsWith("image/"))
-      .slice(0, maxFiles - files.length);
+    const imageFiles = Array.from(incoming).filter((f) =>
+      f.type.startsWith("image/")
+    );
 
+    // Check file size (reject files over 10MB)
+    const oversized = imageFiles.some((f) => f.size > MAX_FILE_SIZE);
+    if (oversized) {
+      setSizeError(true);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
+    const allowed = imageFiles.slice(0, maxFiles - files.length);
     if (allowed.length === 0) return;
 
     const newPreviews = allowed.map((f) => URL.createObjectURL(f));
@@ -98,6 +111,12 @@ export default function ImageUpload({
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
+        </div>
+      )}
+
+      {sizeError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+          Photo is too large (max 10MB). Please use a smaller photo.
         </div>
       )}
 

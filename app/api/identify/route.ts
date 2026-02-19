@@ -10,12 +10,58 @@ import { createClient as createSupabaseServer } from "@/lib/supabase-server";
 export const maxDuration = 30;
 
 const PLANTNET_API_URL = "https://my-api.plantnet.org/v2/identify/all";
+const DAILY_API_LIMIT = 450; // Soft limit (Pl@ntNet allows 500/day)
 
 const DEFAULT_CARE = {
   light: "Bright indirect light",
   water: "Water when top soil is dry",
   soil: "Well-drained potting mix",
 };
+
+/**
+ * Check and increment the global daily API usage counter in Supabase.
+ * Returns { allowed, count } where allowed is false if daily limit is reached.
+ */
+async function checkAndIncrementUsage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServer>>
+): Promise<{ allowed: boolean; count: number }> {
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    // Upsert today's row (creates it if missing, ignores if exists)
+    await supabase
+      .from("api_usage")
+      .upsert(
+        { date: today, call_count: 0 },
+        { onConflict: "date", ignoreDuplicates: true }
+      );
+
+    // Read current count
+    const { data } = await supabase
+      .from("api_usage")
+      .select("call_count")
+      .eq("date", today)
+      .single();
+
+    const currentCount = data?.call_count ?? 0;
+
+    if (currentCount >= DAILY_API_LIMIT) {
+      return { allowed: false, count: currentCount };
+    }
+
+    // Increment counter
+    await supabase
+      .from("api_usage")
+      .update({ call_count: currentCount + 1 })
+      .eq("date", today);
+
+    return { allowed: true, count: currentCount + 1 };
+  } catch (err) {
+    console.error("API usage tracking error:", err);
+    // If tracking fails, still allow the request (don't block users)
+    return { allowed: true, count: -1 };
+  }
+}
 
 export async function POST(
   request: NextRequest
@@ -52,30 +98,95 @@ export async function POST(
       await imageFiles[0].arrayBuffer()
     );
 
+    // --- Global daily usage check ---
+    const supabase = await createSupabaseServer();
+    try {
+      const usage = await checkAndIncrementUsage(supabase);
+      if (!usage.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "We're experiencing high demand today! Please try again tomorrow.",
+          },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // If usage tracking fails, still allow identification
+      console.error("Usage check failed, allowing request anyway");
+    }
+
     // ======================================================
     // Pl@ntNet for plant IDENTIFICATION (free, 500/day)
     // ======================================================
     const plantnetForm = new FormData();
     for (const file of imageFiles) {
-      plantnetForm.append("images", new Blob([imageBufferForStorage], { type: file.type }));
+      plantnetForm.append(
+        "images",
+        new Blob([imageBufferForStorage], { type: file.type })
+      );
       plantnetForm.append("organs", "auto");
     }
 
-    const plantnetResponse = await fetch(
-      `${PLANTNET_API_URL}?include-related-images=true&no-reject=false&nb-results=3&lang=en&api-key=${plantnetKey}`,
-      {
-        method: "POST",
-        body: plantnetForm,
+    // Add 20-second timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    let plantnetResponse: Response;
+    try {
+      plantnetResponse = await fetch(
+        `${PLANTNET_API_URL}?include-related-images=true&no-reject=false&nb-results=3&lang=en&api-key=${plantnetKey}`,
+        {
+          method: "POST",
+          body: plantnetForm,
+          signal: controller.signal,
+        }
+      );
+    } catch (fetchError) {
+      clearTimeout(timeout);
+      if (
+        fetchError instanceof Error &&
+        fetchError.name === "AbortError"
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Identification is taking too long. Please try again.",
+          },
+          { status: 504 }
+        );
       }
-    );
+      throw fetchError;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!plantnetResponse.ok) {
       const errorText = await plantnetResponse.text();
-      console.error("Pl@ntNet API error:", plantnetResponse.status, errorText);
+      console.error(
+        "Pl@ntNet API error:",
+        plantnetResponse.status,
+        errorText
+      );
+
+      if (plantnetResponse.status === 429) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Our plant identification service is temporarily busy. Please try again in a few minutes.",
+          },
+          { status: 429 }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: `Plant identification service returned an error (${plantnetResponse.status}).`,
+          error:
+            "Something went wrong identifying your plant. Please try again.",
         },
         { status: 502 }
       );
@@ -145,7 +256,6 @@ export async function POST(
 
     // Save to history if user is logged in (non-blocking)
     try {
-      const supabase = await createSupabaseServer();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -157,12 +267,13 @@ export async function POST(
         let imageUrl: string | null = null;
         try {
           const filePath = `${user.id}/${Date.now()}.jpg`;
-          const { data: uploadData, error: uploadErr } = await supabase.storage
-            .from("Plant-images")
-            .upload(filePath, imageBufferForStorage, {
-              contentType: "image/jpeg",
-              upsert: false,
-            });
+          const { data: uploadData, error: uploadErr } =
+            await supabase.storage
+              .from("Plant-images")
+              .upload(filePath, imageBufferForStorage, {
+                contentType: "image/jpeg",
+                upsert: false,
+              });
           if (uploadErr) {
             console.error("Storage upload error:", uploadErr.message);
           }
@@ -202,7 +313,10 @@ export async function POST(
   } catch (error) {
     console.error("Identification error:", error);
     return NextResponse.json(
-      { success: false, error: "An unexpected error occurred." },
+      {
+        success: false,
+        error: "Something went wrong. Please try again.",
+      },
       { status: 500 }
     );
   }
