@@ -450,59 +450,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* How it works */}
-      <section className="max-w-4xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="h-px bg-green-200 flex-1 max-w-[60px]" />
-          <h2 className="text-2xl font-bold text-[#303030] text-center">
-            How It Works
-          </h2>
-          <div className="h-px bg-green-200 flex-1 max-w-[60px]" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Card>
-            <div className="text-center">
-              <div className="w-14 h-14 bg-green-50 border border-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">📸</span>
-              </div>
-              <h3 className="font-semibold text-[#303030] mb-1">
-                1. Take a Photo
-              </h3>
-              <p className="text-sm text-gray-500">
-                Snap a picture of any plant or upload an existing photo.
-              </p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <div className="w-14 h-14 bg-green-50 border border-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🤖</span>
-              </div>
-              <h3 className="font-semibold text-[#303030] mb-1">
-                2. Get Results
-              </h3>
-              <p className="text-sm text-gray-500">
-                AI identifies the plant with care instructions and confidence
-                scores.
-              </p>
-            </div>
-          </Card>
-          <Card>
-            <div className="text-center">
-              <div className="w-14 h-14 bg-green-50 border border-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🌱</span>
-              </div>
-              <h3 className="font-semibold text-[#303030] mb-1">
-                3. Grow Greener
-              </h3>
-              <p className="text-sm text-gray-500">
-                Find nearby nurseries and learn how to care for your plants.
-              </p>
-            </div>
-          </Card>
-        </div>
-      </section>
-
       {/* Browse on main site CTA */}
       <section className="relative overflow-hidden bg-gradient-to-b from-green-50/60 to-green-50/30 border-t border-green-200 py-12">
         <div className="relative max-w-4xl mx-auto px-4 text-center">
