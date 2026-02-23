@@ -195,17 +195,17 @@ export default function HomePage() {
         </svg>
 
         {/* Content */}
-        <div className="relative z-10 py-12 sm:py-16">
+        <div className="relative z-10 py-8 sm:py-12">
           <div className="max-w-4xl mx-auto px-4 text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white border border-green-200 text-green-700 text-xs font-medium px-3 py-1.5 rounded-full mb-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 bg-white border border-green-200 text-green-700 text-xs font-medium px-3 py-1.5 rounded-full mb-4 shadow-sm">
               <span>🌿</span> AI-Powered Plant Identification
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-bold text-[#303030] mb-4">
+            <h1 className="text-3xl sm:text-5xl font-bold text-[#303030] mb-3">
               Welcome to Green Cover Initiative
             </h1>
-            <p className="text-lg text-[#0a6b14] mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-[#0a6b14] mb-6 max-w-2xl mx-auto">
               Upload a photo to identify any plant instantly.
             </p>
 
@@ -451,7 +451,7 @@ export default function HomePage() {
       )}
 
       {/* Browse on main site CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-green-50/60 to-green-50/30 border-t border-green-200 py-12">
+      <section className="relative overflow-hidden bg-gradient-to-b from-green-50/60 to-green-50/30 border-t border-green-200 py-8">
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-xl font-bold text-[#303030] mb-2">
             🌳 Browse Our Plant Catalog
