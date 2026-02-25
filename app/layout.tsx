@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase-server";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Plant Identifier | Green Cover Initiative",
+  title: "AI Plant Identifier | Green Cover Initiative",
   description:
-    "Identify any plant from a photo. Get care instructions and find nearby nurseries. A project by Green Cover Initiative.",
+    "Identify any plant from a photo. Find care instructions and nearby nurseries. A project by Green Cover Initiative.",
 };
 
 export default async function RootLayout({
