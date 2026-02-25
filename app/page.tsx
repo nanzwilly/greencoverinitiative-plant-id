@@ -41,8 +41,8 @@ export default function HomePage() {
   // Compress an image using canvas to stay within Vercel's 4.5MB body limit
   function compressImage(
     file: File,
-    maxWidth = 800,
-    quality = 0.6
+    maxWidth = 1200,
+    quality = 0.8
   ): Promise<File> {
     return new Promise((resolve) => {
       const img = new window.Image();
