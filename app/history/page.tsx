@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase-browser";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import type { IdentificationHistoryRecord } from "@/types";
@@ -50,18 +49,21 @@ export default function HistoryPage() {
 
     async function fetchHistory() {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("identification_history")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(50);
+        const res = await fetch("/api/history", { method: "GET" });
+        const json = (await res.json()) as
+          | { success: true; history: IdentificationHistoryRecord[] }
+          | { success: false; error: string };
 
-        if (error) {
-          console.error("Failed to fetch history:", error);
-        } else {
-          setHistory(data || []);
+        if (!res.ok || !json.success) {
+          console.error(
+            "Failed to fetch history:",
+            !json.success ? json.error : "Unknown error"
+          );
+          setHistory([]);
+          return;
         }
+
+        setHistory(json.history || []);
       } catch (err) {
         console.error("History fetch error:", err);
       } finally {

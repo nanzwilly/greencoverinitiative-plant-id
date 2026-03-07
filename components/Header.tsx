@@ -4,21 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase-browser";
+import { signOut } from "next-auth/react";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
 
   const displayName =
-    user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
     "Account";
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/";
+    await signOut({ callbackUrl: "/" });
   }
 
   return (

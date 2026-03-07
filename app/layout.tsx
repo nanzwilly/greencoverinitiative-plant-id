@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import Header from "@/components/Header";
 import AuthProvider from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase-server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,21 +17,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let initialUser = null;
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    initialUser = user;
-  } catch {
-    // Supabase not configured yet — that's okay, run without auth
-  }
+  const session = await getServerSession(authOptions);
 
   return (
     <html lang="en">
       <body className="bg-white text-[#303030] min-h-screen flex flex-col antialiased">
-        <AuthProvider initialUser={initialUser}>
+        <AuthProvider session={session}>
           <Header />
           <main className="flex-1 bg-white border-t border-gray-200">
             {children}

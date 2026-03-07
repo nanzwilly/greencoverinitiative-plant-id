@@ -4,7 +4,9 @@ import type {
   PlantMatch,
 } from "@/types";
 import { getGCILink } from "@/lib/utils";
-import { createClient as createSupabaseServer } from "@/lib/supabase-server";
+import { sql } from "@/lib/db";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 // Allow longer execution time for API calls
 export const maxDuration = 30;
@@ -19,43 +21,26 @@ const DEFAULT_CARE = {
 };
 
 /**
- * Check and increment the global daily API usage counter in Supabase.
+ * Check and increment the global daily API usage counter in Neon.
  * Returns { allowed, count } where allowed is false if daily limit is reached.
  */
-async function checkAndIncrementUsage(
-  supabase: Awaited<ReturnType<typeof createSupabaseServer>>
-): Promise<{ allowed: boolean; count: number }> {
+async function checkAndIncrementUsage(): Promise<{
+  allowed: boolean;
+  count: number;
+}> {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
-    // Upsert today's row (creates it if missing, ignores if exists)
-    await supabase
-      .from("api_usage")
-      .upsert(
-        { date: today, call_count: 0 },
-        { onConflict: "date", ignoreDuplicates: true }
-      );
+    const rows = (await sql`
+      insert into api_usage (date, call_count)
+      values (${today}::date, 1)
+      on conflict (date)
+      do update set call_count = api_usage.call_count + 1
+      returning call_count
+    `) as { call_count: number }[];
 
-    // Read current count
-    const { data } = await supabase
-      .from("api_usage")
-      .select("call_count")
-      .eq("date", today)
-      .single();
-
-    const currentCount = data?.call_count ?? 0;
-
-    if (currentCount >= DAILY_API_LIMIT) {
-      return { allowed: false, count: currentCount };
-    }
-
-    // Increment counter
-    await supabase
-      .from("api_usage")
-      .update({ call_count: currentCount + 1 })
-      .eq("date", today);
-
-    return { allowed: true, count: currentCount + 1 };
+    const count = rows[0]?.call_count ?? -1;
+    return { allowed: count <= DAILY_API_LIMIT, count };
   } catch (err) {
     console.error("API usage tracking error:", err);
     // If tracking fails, still allow the request (don't block users)
@@ -94,14 +79,11 @@ export async function POST(
 
     // Capture image buffer BEFORE FormData consumes the file stream
     // (File streams can only be read once — after fetch() they're exhausted)
-    const imageBufferForStorage = Buffer.from(
-      await imageFiles[0].arrayBuffer()
-    );
+    const imageBuffer = Buffer.from(await imageFiles[0].arrayBuffer());
 
     // --- Global daily usage check ---
-    const supabase = await createSupabaseServer();
     try {
-      const usage = await checkAndIncrementUsage(supabase);
+      const usage = await checkAndIncrementUsage();
       if (!usage.allowed) {
         return NextResponse.json(
           {
@@ -124,7 +106,7 @@ export async function POST(
     for (const file of imageFiles) {
       plantnetForm.append(
         "images",
-        new Blob([imageBufferForStorage], { type: file.type })
+        new Blob([imageBuffer], { type: file.type })
       );
       plantnetForm.append("organs", "auto");
     }
@@ -256,49 +238,35 @@ export async function POST(
 
     // Save to history if user is logged in (non-blocking)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const session = await getServerSession(authOptions);
+      const userId = session?.user?.id;
 
-      if (user && matches.length > 0) {
+      if (userId && matches.length > 0) {
         const topMatch = matches[0];
+        const resultJson = {
+          matches,
+          is_healthy: null,
+          health_diagnoses: [],
+        };
 
-        // Upload user's photo to Supabase Storage (using pre-captured buffer)
-        let imageUrl: string | null = null;
-        try {
-          const filePath = `${user.id}/${Date.now()}.jpg`;
-          const { data: uploadData, error: uploadErr } =
-            await supabase.storage
-              .from("Plant-images")
-              .upload(filePath, imageBufferForStorage, {
-                contentType: "image/jpeg",
-                upsert: false,
-              });
-          if (uploadErr) {
-            console.error("Storage upload error:", uploadErr.message);
-          }
-          if (uploadData?.path) {
-            const { data: urlData } = supabase.storage
-              .from("Plant-images")
-              .getPublicUrl(uploadData.path);
-            imageUrl = urlData.publicUrl;
-          }
-        } catch (uploadError) {
-          console.error("Failed to upload image:", uploadError);
-        }
-
-        await supabase.from("identification_history").insert({
-          user_id: user.id,
-          plant_name: topMatch.name,
-          scientific_name: topMatch.scientific_name,
-          confidence: topMatch.confidence,
-          image_thumbnail: imageUrl,
-          result_json: {
-            matches,
-            is_healthy: null,
-            health_diagnoses: [],
-          },
-        });
+        await sql`
+          insert into identification_history (
+            user_id,
+            plant_name,
+            scientific_name,
+            confidence,
+            image_thumbnail,
+            result_json
+          )
+          values (
+            ${userId}::uuid,
+            ${topMatch.name},
+            ${topMatch.scientific_name || null},
+            ${topMatch.confidence},
+            ${topMatch.image_url || null},
+            ${JSON.stringify(resultJson)}::jsonb
+          )
+        `;
       }
     } catch (historyError) {
       console.error("Failed to save to history:", historyError);

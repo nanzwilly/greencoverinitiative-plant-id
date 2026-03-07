@@ -12,7 +12,7 @@ Built for the [GreenCover Initiative](https://www.greencoverinitiative.com).
 |---|---|
 | Framework | [Next.js](https://nextjs.org) (App Router, TypeScript) |
 | Styling | [Tailwind CSS](https://tailwindcss.com) |
-| Database | [Supabase](https://supabase.com) (planned) |
+| Database | [Neon Postgres](https://neon.tech) |
 | Payments | [Stripe](https://stripe.com) (planned) |
 | Hosting | [Vercel](https://vercel.com) |
 
@@ -26,6 +26,9 @@ Built for the [GreenCover Initiative](https://www.greencoverinitiative.com).
 - npm
 
 ### Run locally
+
+1. Copy `.env.example` to `.env.local`
+2. Create the Neon tables by running `docs/neon-schema.sql` in your Neon SQL Editor
 
 ```bash
 npm install
@@ -78,7 +81,6 @@ npm run lint
 │   └── utils.ts                # Helper utilities
 ├── types/
 │   └── index.ts                # TypeScript type definitions
-└── supabase/                   # Supabase migrations (planned)
 ```
 
 ---

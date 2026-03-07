@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase-browser";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import Link from "next/link";
+import { signIn, signOut } from "next-auth/react";
 
 export default function AccountPage() {
   const { user, loading } = useAuth();
@@ -16,8 +16,6 @@ export default function AccountPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const supabase = createClient();
-
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -26,24 +24,43 @@ export default function AccountPage() {
 
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          setError(error.message);
-        } else {
-          setMessage(
-            "Account created! Check your email for a confirmation link, or sign in directly."
-          );
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const json = (await res.json()) as
+          | { success: true }
+          | { success: false; error: string };
+
+        if (!res.ok || !json.success) {
+          setError(!json.success ? json.error : "Could not create account.");
+          return;
         }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
+
+        const signInRes = await signIn("credentials", {
+          redirect: false,
           email,
           password,
         });
-        if (error) {
-          setError(error.message);
+
+        if (signInRes?.error) {
+          setMessage("Account created! Please sign in.");
         } else {
           window.location.href = "/";
         }
+      } else {
+        const signInRes = await signIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        });
+        if (signInRes?.error) {
+          setError("Invalid email or password.");
+          return;
+        }
+        window.location.href = "/";
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -52,22 +69,8 @@ export default function AccountPage() {
     }
   }
 
-  async function handleGoogleSignIn() {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      setError(error.message);
-    }
-  }
-
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
+    await signOut({ callbackUrl: "/" });
   }
 
   if (loading) {
@@ -81,8 +84,7 @@ export default function AccountPage() {
   // ── Logged-in view ──
   if (user) {
     const displayName =
-      user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-    const provider = user.app_metadata?.provider || "email";
+      user.name || user.email?.split("@")[0] || user.email || "User";
 
     return (
       <div className="max-w-md mx-auto px-4 py-10">
@@ -99,9 +101,6 @@ export default function AccountPage() {
               {displayName}
             </h2>
             <p className="text-sm text-gray-500 mt-1">{user.email}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Signed in with {provider === "google" ? "Google" : "Email"}
-            </p>
 
             <div className="mt-6 space-y-3">
               <Link
@@ -234,10 +233,14 @@ export default function AccountPage() {
 
           {/* Google sign-in */}
           <button
-            onClick={handleGoogleSignIn}
+            onClick={async () => {
+              setError(null);
+              await signIn("google", { callbackUrl: "/" });
+            }}
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700"
+            type="button"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                 fill="#4285F4"
