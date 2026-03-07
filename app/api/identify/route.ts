@@ -7,6 +7,7 @@ import { getGCILink } from "@/lib/utils";
 import { sql } from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { nanoid } from "nanoid";
 
 // Allow longer execution time for API calls
 export const maxDuration = 30;
@@ -236,19 +237,48 @@ export async function POST(
       }
     );
 
-    // Save to history if user is logged in (non-blocking)
+    // Get session for user ID (used for history + share attribution)
+    let userId: string | null = null;
     try {
       const session = await getServerSession(authOptions);
-      const userId = session?.user?.id;
+      userId = session?.user?.id ?? null;
+    } catch {
+      // Session fetch failed — continue without user
+    }
 
-      if (userId && matches.length > 0) {
-        const topMatch = matches[0];
-        const resultJson = {
-          matches,
-          is_healthy: null,
-          health_diagnoses: [],
-        };
+    const topMatch = matches.length > 0 ? matches[0] : null;
+    const resultJson = {
+      matches,
+      is_healthy: null,
+      health_diagnoses: [],
+    };
 
+    // Save shareable result (works for all users, including anonymous)
+    let shareId: string | undefined;
+    if (topMatch) {
+      try {
+        shareId = nanoid(10);
+        await sql`
+          insert into shared_results (share_id, plant_name, scientific_name, confidence, image_url, result_json, user_id)
+          values (
+            ${shareId},
+            ${topMatch.name},
+            ${topMatch.scientific_name || null},
+            ${topMatch.confidence},
+            ${topMatch.image_url || null},
+            ${JSON.stringify(resultJson)}::jsonb,
+            ${userId}::uuid
+          )
+        `;
+      } catch (shareError) {
+        console.error("Failed to create shared result:", shareError);
+        shareId = undefined;
+      }
+    }
+
+    // Save to history if user is logged in (non-blocking)
+    if (userId && topMatch) {
+      try {
         await sql`
           insert into identification_history (
             user_id,
@@ -267,9 +297,9 @@ export async function POST(
             ${JSON.stringify(resultJson)}::jsonb
           )
         `;
+      } catch (historyError) {
+        console.error("Failed to save to history:", historyError);
       }
-    } catch (historyError) {
-      console.error("Failed to save to history:", historyError);
     }
 
     return NextResponse.json({
@@ -277,6 +307,7 @@ export async function POST(
       matches,
       is_healthy: null,
       health_diagnoses: [],
+      share_id: shareId,
     });
   } catch (error) {
     console.error("Identification error:", error);

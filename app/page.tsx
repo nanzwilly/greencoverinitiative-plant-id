@@ -11,6 +11,7 @@ export default function HomePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<PlantMatch[] | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [noPlant, setNoPlant] = useState(false);
   const [userLocation, setUserLocation] = useState<{
@@ -36,6 +37,7 @@ export default function HomePage() {
   const handleFilesChange = useCallback((newFiles: File[]) => {
     setFiles(newFiles);
     setResults(null);
+    setShareId(null);
     setError(null);
     setNoPlant(false);
   }, []);
@@ -132,6 +134,7 @@ export default function HomePage() {
       }
 
       setResults(data.matches);
+      setShareId(data.share_id ?? null);
 
       // Request location for nursery finder
       if (navigator.geolocation) {
@@ -390,6 +393,7 @@ export default function HomePage() {
               <ShareBar
                 plantName={results[0].name}
                 confidence={results[0].confidence}
+                shareUrl={shareId ? `${window.location.origin}/result/${shareId}` : undefined}
               />
               <div className="mt-3">
                 <ResultCard

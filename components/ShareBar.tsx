@@ -5,11 +5,12 @@ import { useState, useEffect } from "react";
 interface ShareBarProps {
   plantName: string;
   confidence: number;
+  shareUrl?: string;
 }
 
 const APP_URL = "https://plantid.greencoverinitiative.com";
 
-export default function ShareBar({ plantName, confidence }: ShareBarProps) {
+export default function ShareBar({ plantName, confidence, shareUrl }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
 
@@ -17,15 +18,16 @@ export default function ShareBar({ plantName, confidence }: ShareBarProps) {
     setCanShare(typeof navigator !== "undefined" && !!navigator.share);
   }, []);
 
+  const url = shareUrl || APP_URL;
   const confidencePercent = Math.round(confidence * 100);
-  const shareText = `I just identified ${plantName} (${confidencePercent}% match) using Green Cover Initiative's Plant Identifier! Try it: ${APP_URL}`;
+  const shareText = `I just identified ${plantName} (${confidencePercent}% match) using Green Cover Initiative's Plant Identifier! Try it: ${url}`;
 
   async function handleNativeShare() {
     try {
       await navigator.share({
         title: `${plantName} - Plant Identifier`,
         text: shareText,
-        url: APP_URL,
+        url: url,
       });
     } catch {
       // User cancelled or error — silently ignore
@@ -34,7 +36,7 @@ export default function ShareBar({ plantName, confidence }: ShareBarProps) {
 
   async function handleCopyLink() {
     try {
-      await navigator.clipboard.writeText(APP_URL);
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

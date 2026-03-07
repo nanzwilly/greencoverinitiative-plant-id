@@ -32,6 +32,7 @@ export interface IdentifyResponse {
   matches: PlantMatch[];
   is_healthy: boolean | null;
   health_diagnoses: HealthDiagnosis[];
+  share_id?: string;
 }
 
 export interface HealthResponse {
