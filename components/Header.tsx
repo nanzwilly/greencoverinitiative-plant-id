@@ -22,7 +22,7 @@ export default function Header() {
     <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
         {/* Logo + site name */}
-        <Link href="/" className="flex items-center gap-2.5">
+        <a href="/" className="flex items-center gap-2.5">
           <Image
             src="/logo.jpg"
             alt="Green Cover Initiative"
@@ -38,7 +38,7 @@ export default function Header() {
               Plant Identifier
             </span>
           </div>
-        </Link>
+        </a>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
