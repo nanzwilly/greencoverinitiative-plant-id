@@ -42,12 +42,12 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link
+          <a
             href="/"
             className="text-[#303030] hover:text-[#1279be] transition"
           >
             Identify
-          </Link>
+          </a>
           <Link
             href="/history"
             className="text-[#303030] hover:text-[#1279be] transition"
@@ -114,13 +114,13 @@ export default function Header() {
       {/* Mobile menu */}
       {menuOpen && (
         <nav className="md:hidden border-t border-gray-200 px-4 py-3 flex flex-col gap-3 text-sm font-medium bg-white">
-          <Link
+          <a
             href="/"
             className="text-[#303030] hover:text-[#1279be]"
             onClick={() => setMenuOpen(false)}
           >
             Identify
-          </Link>
+          </a>
           <Link
             href="/history"
             className="text-[#303030] hover:text-[#1279be]"
