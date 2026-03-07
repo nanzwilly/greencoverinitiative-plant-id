@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import ImageUpload from "@/components/ImageUpload";
 import Card from "@/components/Card";
+import ShareBar from "@/components/ShareBar";
+import ResultCard from "@/components/ResultCard";
 import type { PlantMatch } from "@/types";
 
 export default function HomePage() {
@@ -16,6 +18,19 @@ export default function HomePage() {
     lng: number;
   } | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
+
+  // Create object URL for user's uploaded photo (used in download card)
+  const uploadedImageUrl = useMemo(() => {
+    if (files.length > 0) return URL.createObjectURL(files[0]);
+    return undefined;
+  }, [files]);
+
+  // Clean up object URL when it changes
+  useEffect(() => {
+    return () => {
+      if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+    };
+  }, [uploadedImageUrl]);
 
   // When files change, update state and clear results
   const handleFilesChange = useCallback((newFiles: File[]) => {
@@ -369,6 +384,18 @@ export default function HomePage() {
                     </div>
                   </Card>
                 ))}
+              </div>
+
+              {/* Share & Download */}
+              <ShareBar
+                plantName={results[0].name}
+                confidence={results[0].confidence}
+              />
+              <div className="mt-3">
+                <ResultCard
+                  match={results[0]}
+                  uploadedImageUrl={uploadedImageUrl}
+                />
               </div>
             </section>
 

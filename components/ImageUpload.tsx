@@ -114,6 +114,13 @@ export default function ImageUpload({
         </div>
       )}
 
+      {files.length === 0 && (
+        <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1.5">
+          <span>💡</span>
+          For best results, photograph the plant directly in good lighting
+        </p>
+      )}
+
       {sizeError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
           Photo is too large (max 10MB). Please use a smaller photo.
