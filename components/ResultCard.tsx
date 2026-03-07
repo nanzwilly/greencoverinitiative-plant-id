@@ -125,8 +125,8 @@ export default function ResultCard({
                 alt={match.name}
                 style={{
                   width: "100%",
-                  height: "200px",
-                  objectFit: "cover",
+                  maxHeight: "300px",
+                  objectFit: "contain",
                 }}
                 crossOrigin="anonymous"
               />
