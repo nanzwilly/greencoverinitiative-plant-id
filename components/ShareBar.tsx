@@ -19,8 +19,7 @@ export default function ShareBar({ plantName, confidence, shareUrl }: ShareBarPr
   }, []);
 
   const url = shareUrl || APP_URL;
-  const confidencePercent = Math.round(confidence * 100);
-  const shareText = `I just identified ${plantName} (${confidencePercent}% match) using Green Cover Initiative's Plant Identifier! Try it: ${url}`;
+  const shareText = `I just identified ${plantName} using Green Cover Initiative's Plant Identifier! Try it: ${url}`;
 
   async function handleNativeShare() {
     try {

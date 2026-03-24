@@ -39,8 +39,6 @@ export default function ResultCard({
     }
   }
 
-  const confidencePercent = Math.round(match.confidence * 100);
-
   return (
     <>
       {/* Hidden card for html2canvas capture */}
@@ -85,29 +83,6 @@ export default function ResultCard({
                 Green Cover Initiative
               </span>
             </div>
-            <span
-              style={{
-                display: "inline-block",
-                padding: "4px 12px",
-                borderRadius: "9999px",
-                fontSize: "13px",
-                fontWeight: 700,
-                backgroundColor:
-                  confidencePercent >= 80
-                    ? "#dcfce7"
-                    : confidencePercent >= 60
-                      ? "#fef9c3"
-                      : "#fee2e2",
-                color:
-                  confidencePercent >= 80
-                    ? "#15803d"
-                    : confidencePercent >= 60
-                      ? "#a16207"
-                      : "#dc2626",
-              }}
-            >
-              {confidencePercent}% match
-            </span>
           </div>
 
           {/* Plant image */}

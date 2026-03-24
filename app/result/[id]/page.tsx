@@ -42,13 +42,8 @@ export async function generateMetadata(
     return { title: "Result Not Found | Green Cover Initiative" };
   }
 
-  const confidencePercent = result.confidence
-    ? Math.round(result.confidence * 100)
-    : null;
   const title = `${result.plant_name} - Plant Identifier | Green Cover Initiative`;
-  const description = confidencePercent
-    ? `Identified ${result.plant_name} (${result.scientific_name || ""}) with ${confidencePercent}% confidence using AI Plant Identifier by Green Cover Initiative.`
-    : `Identified ${result.plant_name} using AI Plant Identifier by Green Cover Initiative.`;
+  const description = `Identified ${result.plant_name}${result.scientific_name ? ` (${result.scientific_name})` : ""} using AI Plant Identifier by Green Cover Initiative.`;
 
   return {
     title,
@@ -97,21 +92,6 @@ export default async function SharedResultPage(
           </h1>
           {result.scientific_name && (
             <p className="text-lg text-gray-500 italic">{result.scientific_name}</p>
-          )}
-          {result.confidence && (
-            <div className="mt-3">
-              <span
-                className={`inline-block px-3 py-1.5 rounded-full text-sm font-bold ${
-                  result.confidence >= 0.8
-                    ? "bg-green-100 text-green-700"
-                    : result.confidence >= 0.6
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
-                }`}
-              >
-                {Math.round(result.confidence * 100)}% match
-              </span>
-            </div>
           )}
         </div>
       </section>
@@ -177,20 +157,6 @@ export default async function SharedResultPage(
                   )}
                 </div>
 
-                {/* Confidence badge */}
-                <div className="text-right shrink-0">
-                  <span
-                    className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                      match.confidence >= 0.8
-                        ? "bg-green-100 text-green-700"
-                        : match.confidence >= 0.6
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {Math.round(match.confidence * 100)}%
-                  </span>
-                </div>
               </div>
             </Card>
           ))}

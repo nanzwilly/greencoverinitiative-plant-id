@@ -370,20 +370,6 @@ export default function HomePage() {
                         )}
                       </div>
 
-                      {/* Confidence badge */}
-                      <div className="text-right shrink-0">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                            match.confidence >= 0.8
-                              ? "bg-green-100 text-green-700"
-                              : match.confidence >= 0.6
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {Math.round(match.confidence * 100)}%
-                        </span>
-                      </div>
                     </div>
                   </Card>
                 ))}

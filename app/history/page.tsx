@@ -202,19 +202,6 @@ export default function HistoryPage() {
                             <h3 className="text-lg font-bold text-green-700 truncate">
                               {record.plant_name}
                             </h3>
-                            {record.confidence !== null && (
-                              <span
-                                className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
-                                  record.confidence >= 0.8
-                                    ? "bg-green-100 text-green-700"
-                                    : record.confidence >= 0.6
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-red-100 text-red-700"
-                                }`}
-                              >
-                                {Math.round(record.confidence * 100)}%
-                              </span>
-                            )}
                           </div>
                           {record.scientific_name && (
                             <p className="text-sm text-gray-500 italic truncate">
@@ -263,9 +250,6 @@ export default function HistoryPage() {
                                 </span>
                                 <span className="font-semibold text-green-700 text-sm">
                                   {match.name}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {Math.round(match.confidence * 100)}%
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 italic">
